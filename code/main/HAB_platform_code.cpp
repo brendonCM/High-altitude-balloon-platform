@@ -12,6 +12,8 @@
 #include <string.h>
 #include <termios.h> 
 #include <cstring>
+#include "Temperature.h"
+#include "Voltage_Check.h"
 #include "GPIO.h"
 #include "PWM.h"
 #include <pthread.h>
@@ -44,51 +46,6 @@ char date[7];
 char altitude[9];
 
 FILE *fp;
-
-
-
-
-
-int readAnalog(int number) {
-	// returns the input as an int
-   stringstream ss;
-	ss << Analog_in << number << "_raw";
-	fstream fs;
-	fs.open(ss.str().c_str(), fstream::in);
-	fs >> number;
-	fs.close();
-	return number;
-}
-
-float getTemperature(int adc_value) {
-	float cur_voltage = adc_value * (3.30f / 3000.0f) - 0.1421;
-	float Temp = (cur_voltage - 0.5f) / 0.01f;
-	return Temp;
-}
-
-float getVoltage(int adc_value)
-{
-	float m = 1.65f / 1481.0f;
-	float voltage = ((m) * adc_value) * 2.724 + 0.013;
-	return (voltage);
-}
-
-float getAnalogReadings(int analog_pin)
-{
-	if (analog_pin == 6)
-	{
-		float value = readAnalog(analog_pin);
-		float temperature = getTemperature(value);
-		return temperature;
-	}
-	
-	else if (analog_pin == 5)
-	{
-		float value = readAnalog(analog_pin);
-		float voltage = getVoltage(value);
-		return voltage;
-	}
-}
 
 int setupI2C1()
 {
@@ -381,19 +338,26 @@ int start_stop_Video()
 
 int main(int argc, char* argv[]) {
 
+	// Set pin values for Pocketbeagle
+
+	// Get the internal temperature from pin 6
+	Temperature internalTemp(6);
+	// Get the battery voltage from pin 5
+	Voltage_Check voltageSensor(5);
+
 	// set the release point altitude
-	minAltitude = 22000;
-	maxAltitude = 23000;
+	//minAltitude = 22000;
+	//maxAltitude = 23000;
 	// setting pin high so camera is able to start video when pin goes low
-	GPIO outputGPIO(45);
-	outputGPIO.setDirection(exploringBB::GPIO::OUTPUT);
-	outputGPIO.setValue(exploringBB::GPIO::HIGH);
+	//GPIO outputGPIO(45);
+	//outputGPIO.setDirection(exploringBB::GPIO::OUTPUT);
+	//outputGPIO.setValue(exploringBB::GPIO::HIGH);
 	
 	
 	// setup for peripherals below
 	I2C1_file = setupI2C1();
+	GPS_UART_file = GPS_UART_setup();
 
-	
 	// check for the subsytems if they are connected
 
 	if(storage_capcity == 1)
@@ -405,7 +369,7 @@ int main(int argc, char* argv[]) {
 		outputGPIO.setValue(exploringBB::GPIO::LOW);
 		outputGPIO.setDirection(exploringBB::GPIO::INPUT);
 	}
-	if (getAnalogReadings(5) < 4.5) // if the voltage sensor is less than 4.5V
+	if (voltageSensor.Get_Voltage() < 4.5) // if the voltage sensor is less than 4.5V
 		{
 			GPIO outputGPIO(60);
 			outputGPIO.setDirection(exploringBB::GPIO::OUTPUT);
@@ -424,13 +388,12 @@ int main(int argc, char* argv[]) {
 		outputGPIO.setDirection(exploringBB::GPIO::INPUT);
 	}
 
-	
-	// reading of sensor values below
+	check = 0;
+
+	// System Starts
 	while(1)
 	{
-
-		GPS_UART_file = GPS_UART_setup();
-		check = 0;
+		// GPS Read
 		while (check ==0)  
 		{
 			read(GPS_UART_file, NMEA, 128);
@@ -529,8 +492,8 @@ int main(int argc, char* argv[]) {
 		close(GPS_UART_file);
 		  
 		// Read the internal temperature and voltage from the analog input
-		 intTemp = getAnalogReadings(6);
-		 voltage = getAnalogReadings(5);
+		 intTemp = internalTemp.Get_Temp();
+		 voltage = voltageSensor.Get_Voltage();
 		
 		// Read the BME sensor values
 		 getBME_sensor_values(I2C1_file, &extTemp, &pressure, &humidity);
