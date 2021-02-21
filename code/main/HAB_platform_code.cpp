@@ -22,7 +22,6 @@
 using namespace std;
 using namespace exploringBB;
 
-#define Analog_in "/sys/bus/iio/devices/iio:device0/in_voltage"  // directory for analog inputs
 #define Data_path "/home/debian/projects/data.txt"   // directory where all the data will be saved
 
 
@@ -37,14 +36,6 @@ int storage_capcity = 1;    // indicates if storage capacity is full, if on, it 
 int countCalcSpeed = 0;
 int prevAltitude , VerticalSpeed;
 int check;
-
-char NMEA[128];
-char platformtime[12];
-char latitude[13];
-char longitude[14];
-char speed[5];
-char date[7];
-char altitude[9];
 
 FILE *fp;
 
@@ -171,7 +162,7 @@ int main(int argc, char* argv[]) {
 
 	// check for the subsytems if they are connected
 
-	if(storage_capcity == 1)
+	/*if(storage_capcity == 1)
 	{
 		GPIO outputGPIO(57);
 		outputGPIO.setDirection(exploringBB::GPIO::OUTPUT);
@@ -197,111 +188,11 @@ int main(int argc, char* argv[]) {
 		usleep(30000000);
 		outputGPIO.setValue(exploringBB::GPIO::LOW);
 		outputGPIO.setDirection(exploringBB::GPIO::INPUT);
-	}
-
-	check = 0;
+	} */
 
 	// System Starts
 	while(1)
 	{
-		// GPS Read
-	/*	while (check ==0)  
-		{
-			read(GPS_UART_file, NMEA, 128);
-			if (NMEA[0] == '$' || NMEA[0] == '\n')
-			{
-				if (NMEA[5] == 'C')   // check to see if the GPRMC packet then stores the relevant information of the packets
-					{	
-						for (int i = 0; i < 10; i++)
-						{
-							platformtime[i] = NMEA[i + 7];
-						}
-						if (NMEA[18] == 'A')
-						{
-							// get the latitude coordinates from the NMEA packet
-							for(int i = 0 ; i < 11 ; i++)
-							{
-								latitude[i] = NMEA[i + 20]; 
-							}
-							// get the longitude coordinates from the NMEA packet
-							for(int i = 0 ; i < 12 ; i++)
-							{
-								longitude[i] = NMEA[i + 32]; 
-							}
-							// get the speed from the NMEA packet
-							for(int i = 0 ; i < 4 ; i++)
-							{
-								speed[i] = NMEA[i + 45]; 
-							}
-						
-							// get the date from the NMEA packet
-							int len = strlen(NMEA);
-							int count = 0;
-							int posD1, posD2;
-							for (int i = 0; i < len; i++)
-							{
-								if (NMEA[i] == ',')
-								{
-									count++;
-									if (count == 9)
-									{
-										posD1 = i;
-									}
-									if (count == 10)
-									{
-										posD2 = i;
-									}
-								}
-							}
-							int x = 0;
-							for (int i = posD1 + 1; i < posD2; i++)
-							{
-								date[x] = NMEA[i];
-								x++;
-							}
-							check = 1;
-						}
-					}
-			}
-		}
-		check = 0;
-		while (check ==0)
-		{
-			read(GPS_UART_file, NMEA, 255);
-			if (NMEA[0] == '$' || NMEA[0] == '\n')
-			{
-				if (NMEA[4] == 'G' && NMEA[5] == 'A')  // Used to check for the GPGGA packet to get the altitude of the platform
-					{
-						int len = strlen(NMEA);
-						int count = 0;
-						int pos1, pos2;
-						for (int i = 0; i < len; i++)
-						{
-							if (NMEA[i] == ',')
-							{
-								count++;
-								if (count == 9)
-								{
-									pos1 = i;
-								}
-								if (count == 10)
-								{
-									pos2 = i;
-								}
-							}
-						}
-						int x = 0;
-						for (int i = pos1 + 1; i < pos2; i++)
-						{
-							altitude[x] = NMEA[i];
-							x++;
-						}
-						check = 1;
-					}
-			}
-		}
-		close(GPS_UART_file);*/
-		  
 		// Read the internal temperature and voltage from the analog input
 		intTemp = internalTemp.Get_Temp();
 		voltage = voltageSensor.Get_Voltage();
@@ -310,11 +201,11 @@ int main(int argc, char* argv[]) {
 		bme.get_BME_Sensor_Values(&extTemp, &pressure, &humidity);
 		
 		// Calculate vertical speed
-		getVerticalSpeed();
+		//getVerticalSpeed();
 		
-		intAltitude = atoi(altitude);
+		//intAltitude = atoi(altitude);
 		// Check if time to release capsule at the desired altitude
-		if (intAltitude > minAltitude && intAltitude < maxAltitude)
+		/*if (intAltitude > minAltitude && intAltitude < maxAltitude)
 		{
 			start_stop_Video(); // starts the video
 			usleep(2000000); //allow 5 second for the camera to switch on and get ready
@@ -322,7 +213,7 @@ int main(int argc, char* argv[]) {
 			usleep(180000000); // allow camera to record drop for 3 mins
 			// stop the video recording
 			start_stop_Video(); // stops the video
-		}
+		}*/
 		
 		// save all the data to a textfile
 		fp = fopen(Data_path, "a");
